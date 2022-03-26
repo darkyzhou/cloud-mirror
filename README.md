@@ -6,6 +6,8 @@
 
 访问 `https://cloudmirror.darkyzhou.workers.dev/${需要代理的网址名称}` 即可。
 
+> 也可使用 `http`，适用于一些没有安装 https 证书的环境，安全风险自负。
+
 例如：
 
 - GitHub：[https://cloudmirror.darkyzhou.workers.dev/https://github.com](https://cloudmirror.darkyzhou.workers.dev/https://github.com)
