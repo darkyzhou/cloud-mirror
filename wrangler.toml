@@ -5,7 +5,7 @@ compatibility_date = "2022-03-15"
 
 [vars]
 WORKERS_RS_VERSION = "0.0.9"
-DOMAIN = "http://cloudmirror.darkyzhou.workers.dev"
+DOMAIN = "https://cloudmirror.darkyzhou.workers.dev"
 
 [env.dev.vars]
 DOMAIN = "http://127.0.0.1:8787"
