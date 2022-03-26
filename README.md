@@ -1,6 +1,6 @@
 ## cloudmirror
 
-基于 Cloudflare Workers 实现的简单网页代理。
+基于 Cloudflare Workers 实现的简单网页代理。不仅可以用来下载像 GitHub 的文件，也支持在像 GitHub 这样的网站进行基本的导航。
 
 ### 用法
 
@@ -11,6 +11,7 @@
 - GitHub：[https://cloudmirror.darkyzhou.workers.dev/https://github.com](https://cloudmirror.darkyzhou.workers.dev/https://github.com)
 - NPM：[https://cloudmirror.darkyzhou.workers.dev/https://npmjs.com](https://cloudmirror.darkyzhou.workers.dev/https://npmjs.com)
 - docs.rs：[https://cloudmirror.darkyzhou.workers.dev/https://docs.rs](https://cloudmirror.darkyzhou.workers.dev/https://docs.rs)
+- 下载一个 GitHub 的文件：[https://cloudmirror.darkyzhou.workers.dev/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip](https://cloudmirror.darkyzhou.workers.dev/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip)
 
 ### 限制
 
