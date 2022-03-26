@@ -1,0 +1,23 @@
+name = "cloudmirror"
+type = "javascript"
+workers_dev = true
+compatibility_date = "2022-03-15"
+
+[vars]
+WORKERS_RS_VERSION = "0.0.9"
+DOMAIN = "http://127.0.0.1:8787"
+
+[env.production.vars]
+DOMAIN = "http://cloudmirror.darkyzhou.workers.dev"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+[build.upload]
+dir = "build/worker"
+format = "modules"
+main = "./shim.mjs"
+
+[[build.upload.rules]]
+globs = ["**/*.wasm"]
+type = "CompiledWasm"
