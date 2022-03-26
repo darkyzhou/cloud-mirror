@@ -30,3 +30,13 @@
 
 - 某些网站的搜索框会让用户跳转到像 `https://cloudmirror.darkyzhou.workers.dev/search?q=text` 这样的 url 上，此时只需根据请求的 `referer` 填充正确的 url 即可。
 - （未实现）CSS 文件中也会通过 `url()` 的手段引用外部资源，需要重写。
+
+### 本地开发
+
+1. 安装并配置好 [wrangler](https://github.com/cloudflare/wrangler)。
+2. 运行 `wrangler dev -e dev`。
+
+### 部署
+
+1. 修改 `wrangler.toml` 中的 `vars.DOMAIN`。
+2. 运行 `wrangler publish`。
