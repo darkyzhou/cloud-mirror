@@ -21,23 +21,31 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
     log_request(&req);
     utils::set_panic_hook();
 
-    let domain = _env
-        .var("DOMAIN")
-        .expect("Missing DOMAIN variable")
-        .to_string();
-    let proxy_url = Url::parse(domain.as_str()).expect("Invalid proxy url");
+    let proxy_url = {
+        let domain = _env
+            .var("DOMAIN")
+            .expect("Missing DOMAIN variable")
+            .to_string();
+        Url::parse(domain.as_str()).expect("Invalid proxy url")
+    };
+
     let base_url = match req.url() {
         Err(err) => {
             return Response::error(format!("Unexpected url error: {}", err), 400);
         }
         Ok(req_url) => {
-            if req_url.path() == "/" {
+            let url_to_visit = &req_url.path()[1..];
+
+            if url_to_visit.is_empty() {
                 return Response::redirect(
                     Url::parse("https://github.com/darkyzhou/cloudmirror").unwrap(),
                 );
             }
 
-            let url_to_visit = &req_url.path()[1..];
+            if (url_to_visit.starts_with(proxy_url.as_str())) {
+                return Response::error("Invalid request url", 422);
+            }
+
             match Url::parse(url_to_visit) {
                 Err(ParseError::RelativeUrlWithoutBase) => {
                     let referer = req.headers().get("referer").ok();
@@ -94,58 +102,50 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
     };
 
     match response {
-        Ok(mut response) => {
-            match response.status_code() {
-                200..=299 => {
-                    // TODO: check if the body is too large to read
-                    let is_html = response
-                        .headers()
-                        .get("content-type")
-                        .map(|x| x.map(|x| x.starts_with("text/html"))) // TODO: check the charset
-                        .map(|x| x.is_some() && x.unwrap())
-                        .unwrap_or(false);
-                    if !is_html {
-                        _ = response
-                            .headers_mut()
-                            .set("Access-Control-Allow-Origin", proxy_url.as_str());
-                        Ok(response)
-                    } else {
-                        match response.text().await {
-                            Err(err) => {
-                                console_error!(
-                                    "Error requesting html {}, error: {}",
-                                    req.path(),
-                                    err
-                                );
-                                Response::error(
-                                    format!("Error processing request to {}", req.path()),
-                                    500,
-                                )
-                            }
-                            Ok(html) => Response::from_html(rewrite_html(
-                                &proxy_url,
-                                &base_url,
-                                html.as_str(),
-                            )),
+        Ok(mut response) => match response.status_code() {
+            200..=299 => {
+                // TODO: check if the body is too large to read
+                let is_html = response
+                    .headers()
+                    .get("content-type")
+                    .map(|x| x.map(|x| x.starts_with("text/html"))) // TODO: check the charset
+                    .map(|x| x.is_some() && x.unwrap())
+                    .unwrap_or(false);
+                if !is_html {
+                    _ = response
+                        .headers_mut()
+                        .set("Access-Control-Allow-Origin", proxy_url.as_str());
+                    Ok(response)
+                } else {
+                    match response.text().await {
+                        Err(err) => {
+                            console_error!("Error requesting html {}, error: {}", req.path(), err);
+                            Response::error(
+                                format!("Error processing request to {}", req.path()),
+                                500,
+                            )
+                        }
+                        Ok(html) => {
+                            Response::from_html(rewrite_html(&proxy_url, &base_url, html.as_str()))
                         }
                     }
                 }
-                300..=399 => {
-                    let location = response.headers().get("location");
-                    if let Ok(Some(location)) = location {
-                        response
-                            .headers_mut()
-                            .set(
-                                "location",
-                                &format!("{}/{}", proxy_url.to_string(), location),
-                            )
-                            .unwrap();
-                    }
-                    Ok(response)
-                }
-                _ => Ok(response),
             }
-        }
+            300..=399 => {
+                let location = response.headers().get("location");
+                if let Ok(Some(location)) = location {
+                    response
+                        .headers_mut()
+                        .set(
+                            "location",
+                            &format!("{}/{}", proxy_url.to_string(), location),
+                        )
+                        .unwrap();
+                }
+                Ok(response)
+            }
+            _ => Ok(response),
+        },
         Err(err) => {
             console_error!("Error requesting {}, error: {}", req.path(), err);
             Response::error("Internal error", 500)
