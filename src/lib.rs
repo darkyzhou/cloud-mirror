@@ -105,6 +105,9 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
                         .map(|x| x.is_some() && x.unwrap())
                         .unwrap_or(false);
                     if !is_html {
+                        _ = response
+                            .headers_mut()
+                            .set("Access-Control-Allow-Origin", proxy_url.as_str());
                         Ok(response)
                     } else {
                         match response.text().await {
