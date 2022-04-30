@@ -54,12 +54,12 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
                             return Response::redirect(target_url);
                         }
                         _ => {
-                            return Response::error("Invalid request url", 400);
+                            return Response::error("Invalid request url", 422);
                         }
                     }
                 }
                 Err(err @ _) => {
-                    return Response::error(format!("Invalid request url: {}", err), 400);
+                    return Response::error(format!("Invalid request url: {}", err), 422);
                 }
                 Ok(mut url) => {
                     url.set_query(req_url.query());
@@ -73,7 +73,7 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
     let response = match req.method() {
         Method::Get => Fetch::Url(base_url.clone()).send().await,
         Method::Connect | Method::Trace => {
-            return Response::error("The method is not supported by cloudmirror", 400);
+            return Response::error("The method is not supported by cloudmirror", 422);
         }
         _ => {
             let mut headers = req.headers().clone();
