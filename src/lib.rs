@@ -42,7 +42,7 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
                 );
             }
 
-            if (url_to_visit.starts_with(proxy_url.as_str())) {
+            if url_to_visit.starts_with(proxy_url.as_str()) {
                 return Response::error("Invalid request url", 422);
             }
 
