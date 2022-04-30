@@ -1,5 +1,5 @@
 use lol_html::{element, html_content::Element, HtmlRewriter, Settings};
-use worker::Url;
+use worker::{console_log, Url};
 
 use crate::utils::{normalize_url, to_base_part};
 
@@ -45,6 +45,11 @@ pub fn rewrite_element_url(
 }
 
 pub fn rewrite_url(proxy: &Url, base: &Url, link: String) -> Result<String, ()> {
+    // TODO: whitelist for global cdn, analytics, etc
+    if link.trim().is_empty() || link.starts_with(proxy.as_str()) || link.starts_with("#") {
+        return Ok(link);
+    }
+
     if link.starts_with("//") {
         return Ok(format!("{}{}:{}", proxy.to_string(), base.scheme(), link));
     } else if link.starts_with("/") {
@@ -54,17 +59,15 @@ pub fn rewrite_url(proxy: &Url, base: &Url, link: String) -> Result<String, ()> 
             to_base_part(base),
             &link[1..]
         ));
+    } else if !link.starts_with("http") {
+        console_log!("got link: {}", &link);
+        return Ok(format!(
+            "{}{}{}",
+            proxy.to_string(),
+            base.to_string(),
+            &link
+        ));
+    } else {
+        Ok(format!("{}{}", proxy.to_string(), normalize_url(&link)?))
     }
-
-    // we only handle http(s) urls
-    if !link.starts_with("http") {
-        return Ok(link);
-    }
-
-    // TODO: should we skip self?
-
-    // TODO: whitelist for global cdn, analytics, etc
-
-    // TODO: handle the case where there are many ../../
-    Ok(format!("{}{}", proxy.to_string(), normalize_url(&link)?))
 }
