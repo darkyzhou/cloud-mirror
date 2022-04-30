@@ -76,16 +76,19 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
             return Response::error("The method is not supported by cloudmirror", 400);
         }
         _ => {
+            let mut headers = req.headers().clone();
+            _ = headers.delete("referer");
+
             let body = req.text().await.unwrap();
             let request = Request::new_with_init(
                 base_url.as_str(),
                 RequestInit::new()
                     .with_method(req.method().clone())
                     .with_redirect(RequestRedirect::Follow)
-                    .with_body(Some(JsValue::from_str(&body))),
+                    .with_body(Some(JsValue::from_str(&body)))
+                    .with_headers(headers),
             )
-            .unwrap();
-            // TODO: query & hash
+            .expect("malformed Request object");
             Fetch::Request(request).send().await
         }
     };
