@@ -60,7 +60,6 @@ pub fn rewrite_url(proxy: &Url, base: &Url, link: String) -> Result<String, ()> 
             &link[1..]
         ));
     } else if !link.starts_with("http") {
-        console_log!("got link: {}", &link);
         return Ok(format!(
             "{}{}{}",
             proxy.to_string(),
