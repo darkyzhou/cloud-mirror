@@ -1,5 +1,5 @@
 use lol_html::{element, html_content::Element, HtmlRewriter, Settings};
-use worker::{console_log, Url};
+use worker::Url;
 
 use crate::utils::{normalize_url, to_base_part};
 
