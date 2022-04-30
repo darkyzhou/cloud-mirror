@@ -32,7 +32,9 @@
 #### 边界情况
 
 - 某些网站的搜索框会让用户跳转到像 `https://cloudmirror.darkyzhou.workers.dev/search?q=text` 这样的 url 上，此时只需根据请求的 `referer` 填充正确的 url 即可。
+- 有些资源可能会出现 CORS 异常，此时手动添加一个 `Access-Control-Allow-Origin` 头即可。
 - （未实现）CSS 文件中也会通过 `url()` 的手段引用外部资源，需要重写。
+- （未实现）一些国际性的 CDN 的 url 可以通过白名单过滤掉，例如 jsdelivr。
 
 ### 本地开发
 
