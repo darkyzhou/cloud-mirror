@@ -4,16 +4,16 @@
 
 ### 用法
 
-访问 `https://cloudmirror.darkyzhou.workers.dev/${需要代理的网址名称}` 即可。
+访问 `https://p.zqy.io/网址` 即可。
 
 > 也可使用 `http`，适用于一些没有安装 https 证书的环境，安全风险自负。
 
 例如：
 
-- GitHub：[https://cloudmirror.darkyzhou.workers.dev/https://github.com](https://cloudmirror.darkyzhou.workers.dev/https://github.com)
-- NPM：[https://cloudmirror.darkyzhou.workers.dev/https://npmjs.com](https://cloudmirror.darkyzhou.workers.dev/https://npmjs.com)
-- docs.rs：[https://cloudmirror.darkyzhou.workers.dev/https://docs.rs](https://cloudmirror.darkyzhou.workers.dev/https://docs.rs)
-- 下载一个 GitHub 的文件：[https://cloudmirror.darkyzhou.workers.dev/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip](https://cloudmirror.darkyzhou.workers.dev/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip)
+- GitHub：[https://p.zqy.io/https://github.com](https://p.zqy.io/https://github.com)
+- NPM：[https://p.zqy.io/https://npmjs.com](https://p.zqy.io/https://npmjs.com)
+- docs.rs：[https://p.zqy.io/https://docs.rs](https://p.zqy.io/https://docs.rs)
+- 下载一个 GitHub 的文件：[https://p.zqy.io/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip](https://p.zqy.io/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip)
 
 ### 限制
 
@@ -31,7 +31,7 @@
 
 #### 边界情况
 
-- 某些网站的搜索框会让用户跳转到像 `https://cloudmirror.darkyzhou.workers.dev/search?q=text` 这样的 url 上，此时只需根据请求的 `referer` 填充正确的 url 即可。
+- 某些网站的搜索框会让用户跳转到像 `https://p.zqy.io/search?q=text` 这样的 url 上，此时只需根据请求的 `referer` 填充正确的 url 即可。
 - 有些资源可能会出现 CORS 异常，此时手动添加一个 `Access-Control-Allow-Origin` 头即可。
 - （未实现）CSS 文件中也会通过 `url()` 的手段引用外部资源，需要重写。
 - （未实现）一些国际性的 CDN 的 url 可以通过白名单过滤掉，例如 jsdelivr。
