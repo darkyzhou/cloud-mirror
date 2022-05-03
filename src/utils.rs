@@ -1,6 +1,6 @@
 use cfg_if::cfg_if;
 use normalize_url::normalizer::UrlNormalizer;
-use worker::Url;
+use worker::{Headers, Url};
 
 cfg_if! {
     // https://github.com/rustwasm/console_error_panic_hook#readme
@@ -26,4 +26,19 @@ pub fn normalize_url(url: &str) -> Result<String, ()> {
         .map_err(|_| ())?
         .normalize(None)
         .map_err(|_| ())
+}
+
+pub fn clean_headers(headers: &mut Headers, base_url: &Url) -> Result<(), ()> {
+    headers.delete("referer").map_err(|_| ())?;
+    headers
+        .set("host", base_url.host_str().expect("malformed request url"))
+        .map_err(|_| ())?;
+    let targets: Vec<String> = headers
+        .keys()
+        .filter(|name| name.starts_with("cf-") || name.starts_with("x-"))
+        .collect();
+    for name in targets {
+        headers.delete(name.as_str()).map_err(|_| ())?;
+    }
+    Ok(())
 }

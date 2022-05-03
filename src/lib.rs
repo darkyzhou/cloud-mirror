@@ -1,5 +1,6 @@
 use rewriter::rewrite_html;
 use url::ParseError;
+use utils::clean_headers;
 use wasm_bindgen::JsValue;
 use worker::*;
 
@@ -79,24 +80,40 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
     };
 
     let response = match req.method() {
-        Method::Get => Fetch::Url(base_url.clone()).send().await,
         Method::Connect | Method::Trace => {
             return Response::error("The method is not supported by cloudmirror", 422);
         }
-        _ => {
-            let mut headers = req.headers().clone();
-            _ = headers.delete("referer");
+        Method::Get => {
+            let request = {
+                let mut headers = req.headers().clone();
+                clean_headers(&mut headers, &base_url).expect("failed to clean headers");
 
-            let body = req.text().await.unwrap();
-            let request = Request::new_with_init(
-                base_url.as_str(),
-                RequestInit::new()
-                    .with_method(req.method().clone())
-                    .with_redirect(RequestRedirect::Follow)
-                    .with_body(Some(JsValue::from_str(&body)))
-                    .with_headers(headers),
-            )
-            .expect("malformed Request object");
+                Request::new_with_init(
+                    base_url.as_str(),
+                    RequestInit::new()
+                        .with_redirect(RequestRedirect::Follow)
+                        .with_headers(headers),
+                )
+                .expect("malformed Request object")
+            };
+            Fetch::Request(request).send().await
+        }
+        _ => {
+            let request = {
+                let mut headers = req.headers().clone();
+                clean_headers(&mut headers, &base_url).expect("failed to clean headers");
+
+                let body = req.text().await.unwrap();
+                Request::new_with_init(
+                    base_url.as_str(),
+                    RequestInit::new()
+                        .with_method(req.method().clone())
+                        .with_redirect(RequestRedirect::Follow)
+                        .with_body(Some(JsValue::from_str(&body)))
+                        .with_headers(headers),
+                )
+                .expect("malformed Request object")
+            };
             Fetch::Request(request).send().await
         }
     };
