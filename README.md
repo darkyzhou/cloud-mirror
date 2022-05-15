@@ -2,8 +2,6 @@
 
 基于 Cloudflare Workers 实现的简单网页代理。不仅可以用来下载像 GitHub 的文件，也支持在像 GitHub 这样的网站进行基本的导航。
 
-目前 cloud-mirror 对基于 SPA 路由或类似技术的网站提供了基本的支持，例如 `https://baidu.com` 和 `https://bing.com`。
-
 ### 用法
 
 访问 `https://p.zqy.io/网址` 即可。
@@ -14,7 +12,7 @@
 
 - GitHub：[https://p.zqy.io/https://github.com](https://p.zqy.io/https://github.com)
 - NPM：[https://p.zqy.io/https://npmjs.com](https://p.zqy.io/https://npmjs.com)
-- docs.rs：[https://p.zqy.io/https://docs.rs](https://p.zqy.io/https://docs.rs)
+- Rust Playground：[https://p.zqy.io/https://www.rust-lang.org/](https://p.zqy.io/https://www.rust-lang.org/)（进去后点上面的“Playground”）
 - 下载一个 GitHub 的文件：[https://p.zqy.io/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip](https://p.zqy.io/https://github.com/darkyzhou/blog-house/archive/refs/tags/0.3.0.zip)
 
 ### 限制
@@ -44,6 +42,8 @@
 2. 运行 `wrangler dev -e dev`。
 
 ### 部署
+
+> 你需要了解 Cloudflare Workers 的相关概念，请通过搜索引擎查找相关资料。如果不想这么麻烦，直接用作者的 `p.zqy.io` 即可。
 
 1. 修改 `wrangler.toml` 中的 `vars.DOMAIN`。
 2. 运行 `wrangler publish`。
