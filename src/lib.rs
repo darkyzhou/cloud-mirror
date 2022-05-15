@@ -1,3 +1,4 @@
+use cookie::{time::Duration, Cookie};
 use rewriter::rewrite_html;
 use url::ParseError;
 use utils::clean_headers;
@@ -30,50 +31,83 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
         Url::parse(domain.as_str()).expect("Invalid proxy url")
     };
 
-    let base_url = match req.url() {
+    let origin_url = match req.url() {
         Err(err) => {
             return Response::error(format!("Unexpected url error: {}", err), 400);
         }
         Ok(req_url) => {
             let url_to_visit = &req_url.path()[1..];
-
             if url_to_visit.is_empty() {
-                return Response::redirect(
-                    Url::parse("https://github.com/darkyzhou/cloudmirror").unwrap(),
-                );
-            }
-
-            if url_to_visit.starts_with(proxy_url.as_str()) {
+                match req.headers().get("cookie") {
+                    Ok(Some(cookies)) => {
+                        if let Some(site) =
+                            utils::find_cookie(cookies.as_str(), "__cloud_mirror_current_site__")
+                        {
+                            Url::parse(site.as_str()).unwrap()
+                        } else {
+                            return Response::redirect(
+                                Url::parse("https://github.com/darkyzhou/cloud-mirror").unwrap(),
+                            );
+                        }
+                    }
+                    _ => {
+                        return Response::redirect(
+                            Url::parse("https://github.com/darkyzhou/cloud-mirror").unwrap(),
+                        );
+                    }
+                }
+            } else if url_to_visit.starts_with(proxy_url.as_str()) {
                 return Response::error("Invalid request url", 422);
-            }
+            } else {
+                match Url::parse(url_to_visit) {
+                    Ok(mut url) => {
+                        url.set_query(req_url.query());
+                        url.set_fragment(req_url.fragment());
 
-            match Url::parse(url_to_visit) {
-                Err(ParseError::RelativeUrlWithoutBase) => {
-                    let referer = req.headers().get("referer").ok();
-                    match referer {
-                        Some(Some(referer)) => {
-                            let mut target_url = Url::parse(&format!(
-                                "{}/{}",
-                                referer.trim_end_matches('/'),
-                                &req_url.path()[1..]
-                            ))
-                            .unwrap();
-                            target_url.set_query(req_url.query());
-                            target_url.set_fragment(req_url.fragment());
-                            return Response::redirect(target_url);
+                        if url.path() != "/" {
+                            url
+                        } else {
+                            let mut headers = Headers::new();
+                            headers.append("location", proxy_url.as_str()).unwrap();
+                            headers
+                                .append(
+                                    "set-cookie",
+                                    Cookie::build("__cloud_mirror_current_site__", url.as_str())
+                                        .path("/")
+                                        .max_age(Duration::days(1))
+                                        .secure(false)
+                                        .http_only(true)
+                                        .finish()
+                                        .to_string()
+                                        .as_str(),
+                                )
+                                .unwrap();
+                            return Response::empty()
+                                .and_then(|res| Ok(res.with_status(302)))
+                                .and_then(|res| Ok(res.with_headers(headers)));
+                        }
+                    }
+                    Err(ParseError::RelativeUrlWithoutBase) => match req.headers().get("cookie") {
+                        Ok(Some(cookies)) => {
+                            if let Some(site) = utils::find_cookie(
+                                cookies.as_str(),
+                                "__cloud_mirror_current_site__",
+                            ) {
+                                let mut url = Url::parse(site.as_str()).unwrap();
+                                url.set_path(&req_url.path()[1..]);
+                                url.set_query(req_url.query());
+                                url
+                            } else {
+                                return Response::error("Invalid request url", 422);
+                            }
                         }
                         _ => {
                             return Response::error("Invalid request url", 422);
                         }
+                    },
+                    Err(err @ _) => {
+                        return Response::error(format!("Invalid request url: {}", err), 422);
                     }
-                }
-                Err(err @ _) => {
-                    return Response::error(format!("Invalid request url: {}", err), 422);
-                }
-                Ok(mut url) => {
-                    url.set_query(req_url.query());
-                    url.set_fragment(req_url.fragment());
-                    url
                 }
             }
         }
@@ -86,10 +120,10 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
         Method::Get => {
             let request = {
                 let mut headers = req.headers().clone();
-                clean_headers(&mut headers, &base_url).expect("failed to clean headers");
+                clean_headers(&mut headers, &origin_url).expect("failed to clean headers");
 
                 Request::new_with_init(
-                    base_url.as_str(),
+                    origin_url.as_str(),
                     RequestInit::new()
                         .with_redirect(RequestRedirect::Follow)
                         .with_headers(headers),
@@ -101,11 +135,11 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
         _ => {
             let request = {
                 let mut headers = req.headers().clone();
-                clean_headers(&mut headers, &base_url).expect("failed to clean headers");
+                clean_headers(&mut headers, &origin_url).expect("failed to clean headers");
 
                 let body = req.text().await.unwrap();
                 Request::new_with_init(
-                    base_url.as_str(),
+                    origin_url.as_str(),
                     RequestInit::new()
                         .with_method(req.method().clone())
                         .with_redirect(RequestRedirect::Follow)
@@ -125,7 +159,8 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
                 let is_html = response
                     .headers()
                     .get("content-type")
-                    .map(|x| x.map(|x| x.starts_with("text/html"))) // TODO: check the charset
+                    // TODO: check the charset
+                    .map(|x| x.map(|x| x.starts_with("text/html")))
                     .map(|x| x.is_some() && x.unwrap())
                     .unwrap_or(false);
                 if !is_html {
@@ -142,9 +177,11 @@ pub async fn main(mut req: Request, _env: Env, _ctx: worker::Context) -> Result<
                                 500,
                             )
                         }
-                        Ok(html) => {
-                            Response::from_html(rewrite_html(&proxy_url, &base_url, html.as_str()))
-                        }
+                        Ok(html) => Response::from_html(rewrite_html(
+                            &proxy_url,
+                            &origin_url,
+                            html.as_str(),
+                        )),
                     }
                 }
             }

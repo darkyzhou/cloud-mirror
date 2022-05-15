@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+use cookie::Cookie;
 use normalize_url::normalizer::UrlNormalizer;
 use worker::{Headers, Url};
 
@@ -13,7 +14,7 @@ cfg_if! {
     }
 }
 
-pub fn to_base_part(url: &Url) -> String {
+pub fn get_base_part(url: &Url) -> String {
     let mut clone = url.clone();
     clone.set_path("/");
     clone.set_query(None);
@@ -41,4 +42,15 @@ pub fn clean_headers(headers: &mut Headers, base_url: &Url) -> Result<(), ()> {
         headers.delete(name.as_str()).map_err(|_| ())?;
     }
     Ok(())
+}
+
+pub fn find_cookie(cookies: &str, name: &str) -> Option<String> {
+    let cookies = cookies.split(';');
+    for cookie in cookies {
+        let cookie = Cookie::parse(cookie).unwrap();
+        if cookie.name() == name {
+            return Some(String::from(cookie.value()));
+        }
+    }
+    return None;
 }
